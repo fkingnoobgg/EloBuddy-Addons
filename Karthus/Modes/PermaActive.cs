@@ -13,6 +13,7 @@ namespace Karthus.Modes
             // Setup menu
             Menu.AddGroupLabel("Spell usage");
             UnkillableE = Menu.Add("unkillableE", new CheckBox("Cast E if minion is not lasthittable"));
+            Menu.AddLabel("Note: This will only trigger when in LaneClear or JungleClear mode!");
 
             // Listen to required events
             Orbwalker.OnUnkillableMinion += OnUnkillableMinion;
@@ -20,7 +21,7 @@ namespace Karthus.Modes
 
         private void OnUnkillableMinion(Obj_AI_Base target, Orbwalker.UnkillableMinionArgs args)
         {
-            if (UnkillableE.CurrentValue)
+            if (UnkillableE.CurrentValue && (Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LaneClear) || Orbwalker.ActiveModesFlags.HasFlag(Orbwalker.ActiveModes.LastHit)))
             {
                 // Check if target is in E range and killable with E
                 if (E.IsReady() && E.IsInRange(target) && !IsDefileActive && target.TotalShieldHealth() < E.GetRealDamage(target))
