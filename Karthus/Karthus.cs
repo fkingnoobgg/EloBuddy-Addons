@@ -76,6 +76,7 @@ namespace Karthus
             Menu.AddSeparator();
             Menu.AddGroupLabel("Global configurations");
             Menu.Add("ComboWhileDead", new CheckBox("Combo while dead"));
+            Menu.Add("UltWhileDead", new CheckBox("Ult while dead"));
 
             Menu.AddSeparator();
             Menu.AddGroupLabel("Hitchances for spells");

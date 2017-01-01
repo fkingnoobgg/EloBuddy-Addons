@@ -1,5 +1,7 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System;
 using EloBuddy;
 using EloBuddy.SDK;
 using EloBuddy.SDK.Menu.Values;
@@ -36,7 +38,28 @@ namespace Karthus.Modes
         public override bool Execute()
         {
             // Cast active spells
-            return SpellUsage.Keys.Any(slot => SpellUsage[slot].CurrentValue && Player.GetSpell(slot).IsReady && Instance.SpellHandler.CastOnBestTarget(slot));
+            var ultDead = Instance.GetGlobal<CheckBox>("UltWhileDead");
+            if (ultDead != null && ultDead.CurrentValue && Player.GetSpell(R.Slot).IsReady)
+            {
+                return ExecuteUltWhileDead();
+            }
+            else
+            {
+                return SpellUsage.Keys.Any(slot => SpellUsage[slot].CurrentValue && Player.GetSpell(slot).IsReady && Instance.SpellHandler.CastOnBestTarget(slot));
+            }
+        }
+
+        // karthus passive last for 7 seconds so we want to 
+        // execute spells for 4 seconds then ult (ult takes 3 seconds)
+        public bool ExecuteUltWhileDead()
+        {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            while (sw.Elapsed < TimeSpan.FromSeconds(4))
+            {
+                SpellUsage.Keys.Any(slot => SpellUsage[slot].CurrentValue && Player.GetSpell(slot).IsReady && Instance.SpellHandler.CastOnBestTarget(slot));
+            }
+            return R.Cast();
         }
     }
 }
