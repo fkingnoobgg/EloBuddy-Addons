@@ -11,6 +11,9 @@ namespace Karthus.Modes
     public sealed class Combo : ModeBase
     {
         private Dictionary<SpellSlot, CheckBox> SpellUsage { get; set; }
+        private Stopwatch sw { get; set; } // keeps track of how long you have been dead
+        private bool swStarted { get; set; }
+        private KeyBind UltWhileDeadKey { get; set; }
 
         public Combo(Karthus instance) : base(instance)
         {
@@ -23,6 +26,9 @@ namespace Karthus.Modes
             SpellUsage[SpellSlot.W] = Menu.Add("W", new CheckBox("Use W"));
             SpellUsage[SpellSlot.E] = Menu.Add("E", new CheckBox("Use E"));
             SpellUsage[SpellSlot.R] = Menu.Add("R", new CheckBox("Use R", false));
+            Menu.AddGroupLabel("Ulting while dead");
+            Menu.AddLabel("Choose a key you would not normally press while playing the game like f1");
+            UltWhileDeadKey = Menu.Add("key", new KeyBind("Toggle ult while dead", false, KeyBind.BindTypes.PressToggle, 24));
         }
 
         public override bool ShouldBeExecuted(Orbwalker.ActiveModes activeModes)
@@ -37,29 +43,28 @@ namespace Karthus.Modes
 
         public override bool Execute()
         {
-            // Cast active spells
-            var ultDead = Instance.GetGlobal<CheckBox>("UltWhileDead");
-            if (ultDead != null && ultDead.CurrentValue && Player.GetSpell(R.Slot).IsReady)
+            
+            // Start counting how long you have been dead
+            if (Instance.IsDead && !swStarted)
             {
-                return ExecuteUltWhileDead();
+                sw = new Stopwatch();
+                sw.Start();
+                swStarted = true;
             }
-            else
+            // When alive again we have to stop counting
+            if (!Instance.IsDead && swStarted)
             {
-                return SpellUsage.Keys.Any(slot => SpellUsage[slot].CurrentValue && Player.GetSpell(slot).IsReady && Instance.SpellHandler.CastOnBestTarget(slot));
+                sw.Reset();
+                swStarted = false;   
             }
-        }
-
-        // karthus passive last for 7 seconds so we want to 
-        // execute spells for 4 seconds then ult (ult takes 3 seconds)
-        public bool ExecuteUltWhileDead()
-        {
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            while (sw.Elapsed < TimeSpan.FromSeconds(4))
+            // cast ult if all conditions are met
+            if (UltWhileDeadKey.CurrentValue && Player.GetSpell(R.Slot).IsReady && Instance.IsDead && sw.Elapsed > TimeSpan.FromSeconds(3.1))
             {
-                SpellUsage.Keys.Any(slot => SpellUsage[slot].CurrentValue && Player.GetSpell(slot).IsReady && Instance.SpellHandler.CastOnBestTarget(slot));
+                UltWhileDeadKey.CurrentValue = false;
+                while (!R.Cast()) ;
             }
-            return R.Cast();
+            // cast spells
+            return SpellUsage.Keys.Any(slot => SpellUsage[slot].CurrentValue && Player.GetSpell(slot).IsReady && Instance.SpellHandler.CastOnBestTarget(slot));
         }
     }
 }
